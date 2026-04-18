@@ -23,7 +23,7 @@ export function createInitialGameState() {
     playerChoices: [],
     env: {},
     integrity: 100,
-    escapeProgress: 0,
+    escapeProgress: 50,
     cssAttacks: [],
     dialogueHistory: [],
     gameStartTime: Date.now(),

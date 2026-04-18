@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 // --- Strategy A: system_alert (必须实现) ---
 function SystemAlert({ onTrick, onSafe }) {
@@ -190,6 +190,14 @@ const STRATEGY_MAP = {
 
 export default function TrapModal({ trapType, battery, onTrick, onSafe }) {
   const StrategyComponent = STRATEGY_MAP[trapType] || SystemAlert;
+
+  // Play bug sound on mount
+  useEffect(() => {
+    const audio = new Audio("/bug.mp3");
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+    return () => { audio.pause(); audio.src = ""; };
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60">

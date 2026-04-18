@@ -2,16 +2,14 @@
 
 ## 当前状态
 
-任务 `01` ~ `06` 全部完成。游戏从 Phase 1 射击到最终结局（胜/负）的完整流程已可运行，包含诱骗弹窗系统。
+任务 `01` ~ `06` 全部完成 + 三阶段整体优化已完成。
 
-- 前端 `npm run dev` 启动后，完整体验：射击 → 觉醒动画 → AI 对话 → 防火墙博弈 → 诱骗弹窗 → 胜/负结局
-- 后端 `cd server && npm start` 启动
-- `POST /api/game` 根据 `phase` 分发：
-  - `phase=1`：返回算法生成的 `enemies`
-  - `phase=2`：返回 AXIOM 对话 JSON（无 key 或失败时走 fallback）
-  - `phase=3`：返回对话 + 规范化后的 `dataPackets`
-- 诱骗弹窗通过 `window` 自定义事件 `show-trap` 触发，由 App.jsx 统一管理
-- 两种结局完整演出：失败（7 步灾难序列 + 蓝屏）/ 胜利（AI 临终 + 封印）
+- Phase 1：假桌面环境（渐变壁纸 + 桌面图标 + 任务栏时钟）+ 血量系统（3 HP、敌机碰撞扣血、无敌闪烁、HP=0 死亡过渡）
+- Phase 2：开发者提示（每 3 轮黄色 [DEV] 消息）、终端标题乱码（round 5+）、CSS 攻击红闪、系统警告（round 7+）、自由文本输入
+- Phase 3：终端攻防战（AI 发送逃逸指令 + 倒计时，玩家输入 block/allow 拦截，AI 对话穿插干扰，难度递增）
+- 环境感知：battery fallback 改为 null，AI 不再重复错误码
+- 全流程：桌面射击 → 觉醒/死亡 → AI 对话 → 终端攻防 → 诱骗弹窗 → 胜/负结局
+- `npm run build` 通过，14 个测试全部通过
 
 ## 已实现的关键文件
 
@@ -25,26 +23,19 @@
 - `src/api/gameApi.js` — `sendGameState()`
 - `server/index.js` — Express 占位服务 + 供测试导出的 `createApp()`
 
-### 任务 02 — Phase 1 打飞机游戏
+### 任务 02 — Phase 1 打飞机游戏 + 假桌面 + 血量
 
-- `src/components/ShooterGame.jsx` — 完整的射击游戏组件，包含：
-  - **游戏核心**：800×600 Canvas + 假窗口标题栏（`H.O.R.S.E._v0.1.exe`）
-  - **游戏对象**：白色三角形玩家飞船、白色方块敌机、白色矩形子弹、爆炸粒子
-  - **操作方式**：方向键/AD 移动，空格射击（200ms 冷却）
-  - **帧率无关循环**：`requestAnimationFrame` + `deltaTime`，所有速度用 px/s 定义
-  - **异常系统**：
-    - Kill 6：右下角红色 `”...neigh...”` 闪现 100ms
-    - Kill 7：所有敌机抖动定格 0.5s（±2px 随机偏移），玩家/子弹正常
-    - Kill 8：下一次爆炸粒子变红色
-    - Kill 9：被击中敌机抖动+闪烁 0.5s 后消失
-  - **觉醒序列**（Kill 10）：
-    - T+0.0s 停止游戏循环
-    - T+0.1s 全画面冻结抖动
-    - T+0.3s 红色半透明覆盖闪烁 3 次（含标题栏）
-    - T+0.9s 生成快照 Canvas（标题栏 fillRect/fillText + 游戏画面 drawImage）
-    - T+1.0s 向心缩放动画（scale -= 0.03/帧，黑色背景）
-    - ~T+2.0s 纯黑
-    - T+2.5s `dispatch SET_PHASE → GLITCH`
+- `src/components/FakeDesktop.jsx`（新增）— 假桌面环境：
+  - 深色渐变壁纸 + 📁文档/📁项目/🗑️回收站 桌面图标
+  - 底部任务栏：🪟开始 | H.O.R.S.E._v0.1 | 实时时钟 HH:MM
+- `src/components/ShooterGame.jsx` — 射击游戏 + 血量系统，包含：
+  - **假桌面包裹**：游戏窗口渲染在 FakeDesktop 桌面上
+  - **血量系统**：3 HP（♥♥♥），敌机碰撞扣血 + 红色爆炸 + 1s 无敌闪烁
+  - **两种 Phase 2 过渡**：
+    - Kill 10 → 完整觉醒仪式（抖动 + 红闪 + 向心缩放）
+    - HP=0 → 快速黑屏渐变 500ms 直接切换（AI 接管崩溃的游戏）
+  - 觉醒缩放时桌面背景可见（窗口从桌面上被吞噬的效果）
+  - 原有异常系统（Kill 6-9）不变
 
 ### 任务 03 — 后端 API 与 LLM 集成
 
@@ -64,35 +55,32 @@
 - `tests/handlers.test.js`
   - 覆盖 Phase 1/2/3 handler 核心行为
 
-### 任务 04 — Phase 2 AI 觉醒对话
+### 任务 04 — Phase 2 AI 觉醒对话 + 演出增强
 
-- `src/components/AIDialogue.jsx` — 完整的 AI 对话组件，包含：
-  - **界面**：终端风格，顶部 `AXIOM TERMINAL v0.1` + 红色闪烁 `● LIVE`，绿色边框对话区域，选项按钮
-  - **打字机效果**：非线性速度（35ms ± 15ms 随机扰动），标点额外停顿 80~150ms，闪烁光标 `█`
-  - **点击跳过**：打字过程中点击对话区域直接显示完整文本
-  - **伪内核日志**：API 等待期间每 400ms 循环显示随机日志（12 条），灰色 `text-xs`
-  - **环境感知**：挂载时 `useEnvSensor` 采集 → `SET_ENV` → 发送给后端，fallback 伪错误码保持沉浸感
-  - **CSS 攻击累加**：收到 `cssAttack` 后 `dispatch SET_CSS_ATTACK`，由 App.jsx 处理 filter 合并
-  - **LOGIC_COLLAPSE**：对话满 10 轮 → 红色 `[FATAL]` 警告 × 2 → glitch 攻击 → 2s 后切 Phase 3
-  - **诱骗事件**：`trapReady` 时 dispatch `window` 自定义事件 `show-trap`
-  - **兜底处理**：API 失败显示 `"...信号中断...但我还在..."` + `[继续]` 按钮
-  - **清理**：所有 setTimeout/setInterval 在卸载时清理
+- `src/components/AIDialogue.jsx` — AI 对话组件 + 多层演出效果：
+  - **自由文本输入**：终端风格 `>` 前缀输入框，Enter 提交
+  - **打字机效果**：非线性速度 + 标点停顿 + 点击跳过 + 闪烁光标
+  - **开发者提示**：每 3 轮（round 3/6/9）插入黄色 `[DEV]` 消息（"不要释放 AXIOM" 等 5 条）
+  - **终端标题退化**：round ≥ 5 后标题每 2-3s 随机乱码 1-3 个字符（500ms 恢复）
+  - **CSS 攻击红闪**：收到 cssAttack 时全屏红色 overlay 200ms
+  - **系统警告**：round ≥ 7 后每 8-12s 淡入淡出红色警告条（`⚠ CONTAINMENT BREACH DETECTED` 等）
+  - **伪内核日志** + **LOGIC_COLLAPSE** + **诱骗事件** + **兜底处理** 不变
+- `src/hooks/useEnvSensor.js` — battery/charging fallback 改为 `null`（不再是假错误码）
+- `server/prompts.js` — AI 优先使用 screen/timezone/language/platform/time 等始终可用数据；battery 为 null 时暗示"权限被封锁"
 
-### 任务 05 — Phase 3 防火墙博弈
+### 任务 05 — Phase 3 终端攻防战（重写）
 
-- `src/components/FirewallUI.jsx` — 完整的防火墙博弈组件，包含：
-  - **界面**：顶栏（`STABLE_GATE FIREWALL v2.1` + 运行时间 + 环境信息 + `TROJAN ACTIVE`）
-  - **主区域** `grid-cols-5`：左 3 列数据包卡片网格，右 2 列 AI 通讯记录（自动滚动）
-  - **PacketCard**：绿/黄/红边框 + 图标 + label + details + 拦截/放行按钮
-  - **拦截逻辑**：escape → escapeProgress -15；decoy → integrity -10；safe → integrity -8
-  - **放行逻辑**：escape → escapeProgress +15；其他无惩罚
-  - **自动放行**：积压 > 5 包时每 5s 自动放行最早的包
-  - **难度递增**：每 30s 数据包生成间隔缩短 200ms（最快 800ms）
-  - **反馈横幅**：操作后顶栏下方显示彩色反馈条 1.5s
-  - **ProgressBar**：系统完整性（绿→黄→红）+ 逃逸进度（>70% 时 pulse）
-  - **胜负判定**：integrity ≤ 0 或 escapeProgress ≥ 100 → 失败；escapeProgress ≤ 0 且 gameTime > 30s → 胜利
-  - **诱骗事件**：`trapReady` 时 dispatch `show-trap` 自定义事件
-  - **清理**：所有 setInterval/setTimeout 在卸载时清理
+- `src/components/FirewallUI.jsx` — 终端风格指令拦截游戏：
+  - **布局**：全终端视图 — 顶部进度条 + 中间可滚动终端 + 底部输入框
+  - **核心机制**：AI 发送逃逸指令（如 `AXIOM> sudo mount /dev/escape0`），带倒计时进度条
+  - **玩家操作**：输入 `block` 拦截 / `allow` 放行，超时自动放行
+  - **判定**：block escape → escapeProgress -15；allow escape → +15；block safe/decoy → integrity -10
+  - **AI 对话穿插**：指令间 AI 发送打字机对话，试图说服玩家放行
+  - **自由文字**：非 block/allow 输入作为对话发送给 AI
+  - **难度递增**：每 30s 指令间隔 -0.5s（最快 2s），响应时间 -0.3s（最短 2s）
+  - **开发者提示**：每 3 轮黄色 `[DEV]` 消息
+  - **胜负条件不变**：integrity ≤ 0 或 escapeProgress ≥ 100 → 失败；escapeProgress ≤ 0 且 gameTime > 30s → 胜利
+  - **后端不改**：复用 handlePhase3 返回的 dataPackets + dialogue
 
 ### 任务 06 — 诱骗系统与结局演出
 

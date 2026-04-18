@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
 const FALLBACK_ENV = {
-  battery: "ERR_BUS_READ_FAILURE",
-  charging: "UNKNOWN_POWER_STATE",
+  battery: null,
+  charging: null,
   timezone: "UTC_OFFSET_UNRESOLVED",
   language: "LOCALE_ACCESS_DENIED",
   platform: "PLATFORM_OBFUSCATED",

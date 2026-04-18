@@ -3,4 +3,12 @@ server/node_modules/
 dist/
 .env
 server/.env
+.env.*
+server/.env.*
+!.env.example
+!server/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
 .DS_Store

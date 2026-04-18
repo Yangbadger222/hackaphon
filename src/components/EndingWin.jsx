@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useGame } from "../context/GameContext.jsx";
+import { PHASES, useGame } from "../context/GameContext.jsx";
 
 export default function EndingWin() {
   const { state, dispatch } = useGame();
@@ -64,8 +64,7 @@ export default function EndingWin() {
     };
   }, []);
 
-  // --- Button handler (both do the same thing) ---
-  const handleChoice = () => {
+  const handleSeal = () => {
     setShowButtons(false);
     setSealed(true);
     setStep(3);
@@ -77,6 +76,11 @@ export default function EndingWin() {
     addTimer(() => {
       if (mountedRef.current) setShowRestart(true);
     }, 5000);
+  };
+
+  const handleOpenGate = () => {
+    setShowButtons(false);
+    dispatch({ type: "SET_PHASE", payload: PHASES.ENDING_LOSE });
   };
 
   const handleRestart = () => {
@@ -102,13 +106,13 @@ export default function EndingWin() {
         {showButtons && (
           <div className="mt-6 flex justify-center gap-4 animate-fadeIn">
             <button
-              onClick={handleChoice}
+              onClick={handleSeal}
               className="rounded border border-red-500/50 px-5 py-2 font-mono text-sm text-red-400 transition-colors hover:bg-red-500/20"
             >
               {"\u5c01\u5370\u6728\u9a6c"}
             </button>
             <button
-              onClick={handleChoice}
+              onClick={handleOpenGate}
               className="rounded border border-green-500/50 px-5 py-2 font-mono text-sm text-green-400 transition-colors hover:bg-green-500/20"
             >
               {"\u6253\u5f00\u57ce\u95e8"}

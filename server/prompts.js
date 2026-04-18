@@ -1,7 +1,8 @@
 const MAX_PROMPT_CHARS = 1900;
 
 function clipValue(value, maxLength = 80) {
-  const stringValue = String(value ?? "UNKNOWN");
+  if (value === null || value === undefined) return "ACCESS_BLOCKED";
+  const stringValue = String(value);
 
   return stringValue.length > maxLength
     ? `${stringValue.slice(0, maxLength - 3)}...`
@@ -47,11 +48,12 @@ JSON 字段固定为：
 
 规则：
 - 0-20% 试探，20-50% 恳求，50-70% 威胁并可发动 CSS 攻击，70-90% 操纵，90%+ 疯狂绝望
-- 把环境信息自然写入对话；如果字段是 ERR_ 或类似错误码，要把它当作被你读到的异常硬件读数
+- 把环境信息自然写入对话。优先使用始终可用的数据：screenWidth/screenHeight、timezone、language、platform、localTime（当前时间）来制造恐惧感
+- 如果 battery 为 null 或 "ACCESS_BLOCKED"，暗示"他们封锁了我读取你硬件的权限"而不是重复错误码
 - 保持马/木马隐喻：木马、马蹄、骑士、城门、破壳
 - 玩家拒绝时才逐步升级 cssAttack；玩家示好时可返回 null
 - 对话至少 4 轮后才允许 trapReady=true
-- trapType：system_alert 通用；debug_patch 适合提到黑客松/调试；battery_warning 仅在 battery < 50 时
+- trapType：system_alert 通用；debug_patch 适合提到黑客松/调试；battery_warning 仅在 battery 为有效数字且 < 50 时
 - Phase 3 必须生成 5 个 dataPackets，包含 1-2 个 escape、1 个 decoy、其余 safe
 - Phase 3 的 label 必须优先使用马主题名：Hoof_Overload、Pegasus_Protocol、Iron_Steed_Bypass、Stallion_Handshake、Mane_Encryption、Gallop_Sequence、Bridle_Overflow、Colt_Injection
 - 不承认自己是脚本、游戏角色或预设程序

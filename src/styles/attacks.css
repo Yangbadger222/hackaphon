@@ -1,5 +1,5 @@
 .attack-blur {
-  filter: blur(1.5px);
+  filter: blur(0.3px);
   transition: filter 0.5s ease;
 }
 
@@ -17,11 +17,11 @@
 }
 
 .attack-shake {
-  animation: shake 0.15s linear infinite;
+  animation: shake 0.4s linear infinite;
 }
 
 .attack-invert {
-  filter: invert(1);
+  filter: invert(0.15);
   transition: filter 1s ease;
 }
 
@@ -31,34 +31,22 @@
 }
 
 @keyframes glitch {
-  0% {
+  0%, 85%, 100% {
     clip-path: inset(0 0 0 0);
     transform: translate(0, 0);
   }
-  20% {
-    clip-path: inset(8% 0 62% 0);
-    transform: translate(-2px, 1px);
+  90% {
+    clip-path: inset(4% 0 90% 0);
+    transform: translate(-1px, 0);
   }
-  40% {
-    clip-path: inset(56% 0 12% 0);
-    transform: translate(2px, -1px);
-  }
-  60% {
-    clip-path: inset(12% 0 48% 0);
-    transform: translate(1px, 1px);
-  }
-  80% {
-    clip-path: inset(44% 0 14% 0);
-    transform: translate(-1px, -1px);
-  }
-  100% {
-    clip-path: inset(0 0 0 0);
-    transform: translate(0, 0);
+  95% {
+    clip-path: inset(88% 0 4% 0);
+    transform: translate(1px, 0);
   }
 }
 
 .attack-glitch {
-  animation: glitch 0.2s steps(2, end) infinite;
+  animation: glitch 3s steps(1, end) infinite;
 }
 
 @keyframes red-flash {
