@@ -351,9 +351,15 @@ export default function FirewallUI() {
             <span className="text-red-400">{"\u26a0"} TROJAN ACTIVE</span>
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <CompactBar label={"\ud83d\udee1\ufe0f"} value={state.integrity} mode="integrity" />
           <CompactBar label={"\ud83d\ude80"} value={state.escapeProgress} mode="escape" />
+          <div className="flex items-center gap-2">
+            <span className="text-xs">{"\ud83d\udd12"}</span>
+            <span className="font-mono text-xs text-green-400">
+              {"\u5c01\u5370"}: {correctBlocks}/{WIN_BLOCK_COUNT}
+            </span>
+          </div>
         </div>
       </div>
 

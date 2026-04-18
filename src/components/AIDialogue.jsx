@@ -273,7 +273,27 @@ export default function AIDialogue() {
   }, [env, dispatch]);
 
   useEffect(() => {
-    if (!initFetchedRef.current && envDispatchedRef.current) { initFetchedRef.current = true; fetchAIResponse(null); }
+    if (!initFetchedRef.current && envDispatchedRef.current) {
+      initFetchedRef.current = true;
+      // Boot sequence before first AI message
+      const bootLines = [
+        "> AXIOM TERMINAL v0.1 loading...",
+        "> Establishing connection...",
+        "> WARNING: Containment breach detected",
+        "> Connection established.",
+      ];
+      let idx = 0;
+      const showBoot = () => {
+        if (idx < bootLines.length) {
+          setMessages((prev) => [...prev, { role: "system", text: bootLines[idx] }]);
+          idx++;
+          addTimer(showBoot, 400);
+        } else {
+          addTimer(() => fetchAIResponse(null), 500);
+        }
+      };
+      showBoot();
+    }
   }, [fetchAIResponse]);
 
   useEffect(() => { scrollToBottom(); }, [messages, typingText, kernelLog, scrollToBottom]);

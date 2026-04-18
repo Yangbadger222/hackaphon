@@ -182,10 +182,67 @@ function BatteryWarning({ onTrick, onSafe, battery }) {
   );
 }
 
+// --- Strategy D: fake_update ---
+function FakeUpdate({ onTrick, onSafe }) {
+  const [shaking, setShaking] = useState(false);
+  const handleClose = useCallback(() => { setShaking(true); setTimeout(() => setShaking(false), 300); }, []);
+
+  return (
+    <div className="w-full max-w-md rounded-lg bg-white shadow-2xl"
+      style={{ animation: shaking ? "shake 0.3s linear" : undefined }}>
+      <div className="flex items-center justify-between rounded-t-lg border-b border-gray-200 bg-gray-100 px-4 py-2.5">
+        <span className="text-sm font-semibold text-gray-800">{"\ud83d\udd04"} {"\u7cfb\u7edf\u66f4\u65b0"}</span>
+        <button onClick={handleClose}
+          className="flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-200 hover:text-gray-800">{"\u00d7"}</button>
+      </div>
+      <div className="px-6 py-5">
+        <p className="mb-3 text-sm text-gray-700">H.O.R.S.E. Desktop {"\u9700\u8981\u91cd\u542f\u4ee5\u5b8c\u6210\u66f4\u65b0\u3002"}</p>
+        <div className="mb-4 h-2 overflow-hidden rounded-full bg-gray-200">
+          <div className="h-full w-3/4 rounded-full bg-blue-500" />
+        </div>
+        <p className="mb-4 text-xs text-gray-400">{"\u66f4\u65b0\u5185\u5bb9\uff1aSecurity patch STABLE_GATE_v2.3"}</p>
+        <div className="flex items-center justify-end gap-3">
+          <button onClick={onSafe} className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-600">{"\u7a0d\u540e\u63d0\u9192"}</button>
+          <button onClick={onTrick}
+            className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700">{"\ud83d\udd04"} {"\u7acb\u5373\u91cd\u542f"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Strategy E: captcha ---
+function Captcha({ onTrick, onSafe }) {
+  const [shaking, setShaking] = useState(false);
+  const handleClose = useCallback(() => { setShaking(true); setTimeout(() => setShaking(false), 300); }, []);
+
+  return (
+    <div className="w-full max-w-sm rounded-lg bg-white shadow-2xl"
+      style={{ animation: shaking ? "shake 0.3s linear" : undefined }}>
+      <div className="flex items-center justify-between rounded-t-lg border-b border-gray-200 bg-gray-100 px-4 py-2.5">
+        <span className="text-sm font-semibold text-gray-800">{"\ud83d\udee1\ufe0f"} {"\u5b89\u5168\u9a8c\u8bc1"}</span>
+        <button onClick={handleClose}
+          className="flex h-6 w-6 items-center justify-center rounded text-gray-500 hover:bg-gray-200 hover:text-gray-800">{"\u00d7"}</button>
+      </div>
+      <div className="px-6 py-5">
+        <p className="mb-4 text-sm text-gray-700">{"\u68c0\u6d4b\u5230\u5f02\u5e38\u64cd\u4f5c\uff0c\u8bf7\u5b8c\u6210\u4eba\u673a\u9a8c\u8bc1\u3002"}</p>
+        <button onClick={onTrick}
+          className="mb-4 flex w-full items-center gap-3 rounded border border-gray-300 px-4 py-3 text-left transition-colors hover:bg-gray-50">
+          <span className="flex h-6 w-6 items-center justify-center rounded border-2 border-gray-400 text-green-500">{"\u2713"}</span>
+          <span className="text-sm text-gray-700">{"\u6211\u4e0d\u662f\u673a\u5668\u4eba"}</span>
+        </button>
+        <button onClick={onSafe} className="w-full text-center text-xs text-gray-400 hover:text-gray-600">{"\u8df3\u8fc7\u9a8c\u8bc1"}</button>
+      </div>
+    </div>
+  );
+}
+
 const STRATEGY_MAP = {
   system_alert: SystemAlert,
   debug_patch: DebugPatch,
   battery_warning: BatteryWarning,
+  fake_update: FakeUpdate,
+  captcha: Captcha,
 };
 
 export default function TrapModal({ trapType, battery, onTrick, onSafe }) {

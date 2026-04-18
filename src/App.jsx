@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import AIDialogue from "./components/AIDialogue.jsx";
+import BugPopups from "./components/BugPopups.jsx";
 import EndingLose from "./components/EndingLose.jsx";
 import EndingWin from "./components/EndingWin.jsx";
 import FakeDesktop from "./components/FakeDesktop.jsx";
@@ -159,9 +160,15 @@ function GameRouter() {
 
   const showDesktop = !isEnding;
 
+  // Bug popups round estimate (choices length ~ round count)
+  const estimatedRound = state.playerChoices.length;
+
   const content = (
     <>
       <ActiveComponent />
+      {showDesktop && (
+        <BugPopups phase={state.phase} roundCount={estimatedRound} />
+      )}
       {showTrap && (
         <TrapModal
           trapType={trapType}

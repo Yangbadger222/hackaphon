@@ -17,7 +17,7 @@ const EMOTIONS = new Set([
 ]);
 
 const CSS_ATTACKS = new Set(["blur", "shake", "invert", "rotate", "glitch"]);
-const TRAP_TYPES = new Set(["system_alert", "debug_patch", "battery_warning"]);
+const TRAP_TYPES = new Set(["system_alert", "debug_patch", "battery_warning", "fake_update", "captcha"]);
 const THREAT_LEVELS = new Set(["escape", "decoy", "safe"]);
 
 const HORSE_LABELS = [

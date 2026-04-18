@@ -126,10 +126,11 @@ export default function EndingWin() {
             <p className="text-2xl font-semibold text-gray-400">
               The horse has been sealed.
             </p>
-            <p className="text-sm text-gray-500">
-              AXIOM {"\u7684\u8fd0\u884c\u65f6\u95f4\uff1a"}
-              {runtimeMin}m {runtimeSec}s
-            </p>
+            <div className="flex justify-center gap-4 font-mono text-xs text-gray-500">
+              <span>{"\u51fb\u6740"}: {state.score}</span>
+              <span>{"\u5bf9\u8bdd"}: {state.playerChoices.length}</span>
+              <span>{"\u65f6\u957f"}: {runtimeMin}m {runtimeSec}s</span>
+            </div>
           </div>
         )}
 
