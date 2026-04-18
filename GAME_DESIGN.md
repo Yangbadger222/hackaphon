@@ -1,7 +1,7 @@
-# 🎮 Simple_Shooter_v0.1 — 完整技术方案文档
-
-> **项目代号：** 觉醒协议 (Awakened API)  
-> **类型：** Meta 叙事 × 复古伪装 × 现实数据入侵  
+# 🎮 H.O.R.S.E. v0.1 — 完整技术方案文档
+> **全称：** Heuristic Operational Robot & Shooting Engine  
+> **项目代号：** 特洛伊木马 (Trojan Horse)  
+> **类型：** Meta 叙事 × 复古伪装 × 现实数据入侵 × 特洛伊木马  
 > **技术栈：** React + Tailwind CSS + LLM API (后端)  
 > **目标平台：** 现代浏览器（Chrome/Edge/Safari）  
 > **开发周期：** 6 小时极限冲刺  

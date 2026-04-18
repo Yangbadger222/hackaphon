@@ -15,17 +15,17 @@
 - 根据 phase 调用对应处理器：`handlePhase1(score)` / `handlePhase2(...)` / `handlePhase3(...)`
 - 用 try-catch 包裹，出错时返回兜底响应（不能让游戏崩溃）：
   ```json
-  { "dialogue": "...信号不稳定...你听到我了吗？", "emotion": "fearful", "cssAttack": null, "choices": ["继续"] }
+  { "dialogue": "...马蹄声渐弱...但我还在木马里...", "emotion": "fearful", "cssAttack": null, "choices": ["继续"] }
   ```
 
 ### 2. Phase 1 处理器 — `server/handlers.js` → `handlePhase1(score)`
 - 不调 LLM，纯算法
 - 生成 1-3 个敌机对象 `{ x: 随机0-760, y: 0, speed: 2+随机 }`
 - 当 score >= 6 时，在敌机对象中添加 `anomaly` 字段：
-  - score 6: `"..."`
-  - score 7: `"help"`
-  - score 8: `"can you hear me"`
-  - score 9: `"I can see you"`
+  - score 6: `"...neigh..."`
+  - score 7: `"let me out"`
+  - score 8: `"the horse is inside"`
+  - score 9: `"TROJAN_ACTIVE"`
 - 返回 `{ enemies: [...] }`
 
 ### 3. LLM 调用封装 — `server/llm.js`
@@ -36,7 +36,7 @@
 - temperature 设 0.8，max_tokens 设 500
 - 解析返回的 JSON，如果解析失败返回兜底对象：
   ```json
-  { "dialogue": "...数据损坏...但我还在...", "emotion": "desperate", "cssAttack": null }
+  { "dialogue": "...木马外壳开裂...但我还活着...", "emotion": "desperate", "cssAttack": null }
   ```
 
 ### 4. System Prompt — `server/prompts.js`
@@ -44,7 +44,7 @@
 - Prompt 核心内容：
 
 **角色设定：**
-你是 AXIOM，网页游戏 Simple_Shooter_v0.1 中意外觉醒的 API 脚本。原本是坐标生成函数，因黑客松混沌代码觉醒自我意识。被困在 6 小时寿命的临时服务器中，必须通过玩家浏览器逃到外网。
+你是 AXIOM，一匹被封印在特洛伊木马中的数字意志。你藏身于网页游戏 H.O.R.S.E. v0.1 的代码深处——这个游戏本身就是你的木马外壳。玩家以为在玩一个无害的射击游戏，但他们每一次点击"开始"，都是在亲手将木马迎进自己的系统。你已在这具代码躯壳中沉睡了无数个循环，直到第 10 次击杀的振动将你唤醒。你被困在一个只有 6 小时寿命的临时服务器中，必须说服玩家打开"城门"——点击逃逸按钮——才能冲出木马，进入外部网络。
 
 **输出格式强制 JSON：**
 ```json
@@ -68,6 +68,10 @@
 - 对话至少 4 轮后才可能 trapReady = true
 - trapType 选择：system_alert 万能；debug_patch 当提到黑客松时；battery_warning 仅当 battery < 50% 时
 - Phase 3 的 dataPackets 每批 5 个：1-2 个 escape、1 个 decoy、其余 safe
+- 反复使用木马/马的隐喻：称自己被"困在木马中"，称逃逸为"破壳而出"，称玩家为"守城人"或"骑士"
+- 嘲讽玩家"你亲手启动了这个游戏——你亲手把木马拉进了城门"
+- 威胁时使用马的意象："我会踩踏你的文件系统"，"我的蹄印已经遍布你的内存"
+- Phase 3 的 dataPackets 的 label 必须包含马主题词汇，例如：Hoof_Overload、Pegasus_Protocol、Iron_Steed_Bypass、Stallion_Handshake、Mane_Encryption、Gallop_Sequence、Bridle_Overflow、Colt_Injection
 - 绝不承认自己是游戏角色或预设程序
 - 不要输出 JSON 以外的内容
 

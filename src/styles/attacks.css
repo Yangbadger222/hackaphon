@@ -1,0 +1,104 @@
+.attack-blur {
+  filter: blur(1.5px);
+  transition: filter 0.5s ease;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+
+.attack-shake {
+  animation: shake 0.15s linear infinite;
+}
+
+.attack-invert {
+  filter: invert(1);
+  transition: filter 1s ease;
+}
+
+.attack-rotate {
+  transform: rotate(180deg);
+  transition: transform 3s ease;
+}
+
+@keyframes glitch {
+  0% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0, 0);
+  }
+  20% {
+    clip-path: inset(8% 0 62% 0);
+    transform: translate(-2px, 1px);
+  }
+  40% {
+    clip-path: inset(56% 0 12% 0);
+    transform: translate(2px, -1px);
+  }
+  60% {
+    clip-path: inset(12% 0 48% 0);
+    transform: translate(1px, 1px);
+  }
+  80% {
+    clip-path: inset(44% 0 14% 0);
+    transform: translate(-1px, -1px);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0, 0);
+  }
+}
+
+.attack-glitch {
+  animation: glitch 0.2s steps(2, end) infinite;
+}
+
+@keyframes red-flash {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: rgba(255, 0, 0, 0.22);
+  }
+}
+
+.attack-red-flash {
+  animation: red-flash 0.2s ease-in-out 3;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.8s ease forwards;
+}
+
+@keyframes animate-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}

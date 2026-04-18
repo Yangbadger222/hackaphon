@@ -1,0 +1,15 @@
+{
+  "name": "server",
+  "version": "0.1.0",
+  "description": "H.O.R.S.E. v0.1 API server",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "openai": "^6.34.0"
+  }
+}
