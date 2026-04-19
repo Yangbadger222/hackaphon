@@ -1,6 +1,5 @@
-export const OPENROUTER_URL =
-  "https://openrouter.ai/api/v1/chat/completions";
-export const OPENROUTER_MODEL = "anthropic/claude-3.7-sonnet";
+export const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
+export const DEEPSEEK_MODEL = "deepseek-chat";
 
 export function getLLMFallbackResponse() {
   return {
@@ -11,10 +10,10 @@ export function getLLMFallbackResponse() {
 }
 
 function hasConfiguredCredential(env) {
-  const value = env.OPENROUTER_API_KEY;
+  const value = env.DEEPSEEK_API_KEY;
 
   return (
-    Boolean(value) && !String(value).includes("your_openrouter_api_key_here")
+    Boolean(value) && !String(value).includes("your_deepseek_api_key_here")
   );
 }
 
@@ -63,14 +62,14 @@ export async function callLLM(systemPrompt, userMessage, options = {}) {
   }
 
   try {
-    const response = await fetchImpl(OPENROUTER_URL, {
+    const response = await fetchImpl(DEEPSEEK_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: OPENROUTER_MODEL,
+        model: DEEPSEEK_MODEL,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },

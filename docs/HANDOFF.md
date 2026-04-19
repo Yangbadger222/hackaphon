@@ -50,7 +50,7 @@
 - `server/prompts.js`
   - `buildSystemPrompt(gameState)`：AXIOM 角色设定 + 状态注入 + JSON 输出约束
 - `server/llm.js`
-  - 固定调用 OpenRouter `anthropic/claude-3.7-sonnet`
+  - 固定调用 DeepSeek `deepseek-chat`
   - 无 key、坏 key、坏 JSON 时统一返回 fallback
 - `tests/handlers.test.js`
   - 覆盖 Phase 1/2/3 handler 核心行为
@@ -109,9 +109,9 @@
 
 ## 默认假设
 
-- 本项目固定使用 OpenRouter 的 `anthropic/claude-3.7-sonnet`
+- 本项目固定使用 DeepSeek 的 `deepseek-chat`
   - `server/llm.js` 不再支持 provider/model 切换
-  - 只从 `server/.env` 读取 `OPENROUTER_API_KEY`
+  - 只从 `server/.env` 读取 `DEEPSEEK_API_KEY`
 - 当前目标是 hackathon 原型，优先为后续 Phase 铺路，不做超前抽象
 - 当前不引入任何额外测试框架，统一使用 Node 内置测试能力
 
@@ -157,7 +157,7 @@
 
 - 不要把真实 API Key 写入 `server/.env` 之外的任何位置
 - 新环境接手时，先执行 `cd server && cp .env.example .env`
-- 需要在 `server/.env` 中提供 `OPENROUTER_API_KEY`
+- 需要在 `server/.env` 中提供 `DEEPSEEK_API_KEY`
 - 保持所有 `setInterval` / `setTimeout` 在组件卸载时清理
 - 不要把 Phase 逻辑硬塞进 `GameContext`，Context 只负责轻量状态更新
 - 继续开发时不要破坏 `src/` 作为前端代码根目录的约定

@@ -81,7 +81,7 @@ npm run build
 
 - 所有开发代码都位于 `src/`
 - 不使用第三方游戏引擎，后续游戏阶段只用 DOM + Canvas 2D
-- 当前默认接入的 LLM SDK 为 `openai`
+- 当前默认接入的 LLM API 为 `DeepSeek`
 - `state.cssAttacks` 采用累加模式，`blur`/`invert` 用 inline filter 组合，其他攻击用 class 叠加
 - `useEnvSensor` 在 API 不可用时会返回伪系统错误码，而不是 `null`
 

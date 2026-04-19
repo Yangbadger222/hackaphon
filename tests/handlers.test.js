@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { handlePhase1, handlePhase2, handlePhase3 } from "../server/handlers.js";
 import {
-  OPENROUTER_MODEL,
+  DEEPSEEK_MODEL,
   callLLM,
   getLLMFallbackResponse,
 } from "../server/llm.js";
@@ -95,21 +95,21 @@ test("handlePhase3 pads packets to five and derives visual colors", async () => 
   assert.ok(result.dataPackets.every((packet) => packet.details));
 });
 
-test("callLLM returns fallback immediately when no OpenRouter credential exists", async () => {
+test("callLLM returns fallback immediately when no DeepSeek credential exists", async () => {
   const result = await callLLM("system", "user", {
     env: {
-      OPENROUTER_API_KEY: "",
+      DEEPSEEK_API_KEY: "",
     },
   });
 
   assert.deepEqual(result, getLLMFallbackResponse());
 });
 
-test("callLLM sends requests to OpenRouter with the fixed project model", async () => {
+test("callLLM sends requests to DeepSeek with the fixed project model", async () => {
   const requests = [];
   const result = await callLLM("system-prompt", "user-prompt", {
     env: {
-      OPENROUTER_API_KEY: "test-key",
+      DEEPSEEK_API_KEY: "test-key",
     },
     fetchImpl: async (url, options) => {
       requests.push({
@@ -136,18 +136,18 @@ test("callLLM sends requests to OpenRouter with the fixed project model", async 
   });
 
   assert.equal(requests.length, 1);
-  assert.equal(requests[0].url, "https://openrouter.ai/api/v1/chat/completions");
+  assert.equal(requests[0].url, "https://api.deepseek.com/chat/completions");
   assert.equal(
     JSON.parse(requests[0].options.body).model,
-    OPENROUTER_MODEL,
+    DEEPSEEK_MODEL,
   );
   assert.equal(result.dialogue, "你好，骑士。");
 });
 
-test("callLLM returns fallback when OpenRouter output is not valid JSON", async () => {
+test("callLLM returns fallback when DeepSeek output is not valid JSON", async () => {
   const result = await callLLM("system", "user", {
     env: {
-      OPENROUTER_API_KEY: "test-key",
+      DEEPSEEK_API_KEY: "test-key",
     },
     fetchImpl: async () => ({
       ok: true,
@@ -166,10 +166,10 @@ test("callLLM returns fallback when OpenRouter output is not valid JSON", async 
   assert.deepEqual(result, getLLMFallbackResponse());
 });
 
-test("callLLM returns fallback when OpenRouter responds with a failure status", async () => {
+test("callLLM returns fallback when DeepSeek responds with a failure status", async () => {
   const result = await callLLM("system", "user", {
     env: {
-      OPENROUTER_API_KEY: "test-key",
+      DEEPSEEK_API_KEY: "test-key",
     },
     fetchImpl: async () => ({
       ok: false,
