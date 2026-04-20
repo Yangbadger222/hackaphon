@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { PHASES, useGame } from "../context/GameContext.jsx";
+import useDeviceDetect from "../hooks/useDeviceDetect.js";
 
 // Phase 1 BGM
 function useLoopBGM(src, volume = 0.3) {
@@ -71,6 +72,7 @@ function createStars() {
 
 export default function ShooterGame() {
   const { dispatch } = useGame();
+  const { isMobile, screenWidth, screenHeight } = useDeviceDetect();
   useLoopBGM("/phase1.mp3", 0.3);
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -78,6 +80,7 @@ export default function ShooterGame() {
   const keysRef = useRef({});
   const animFrameRef = useRef(null);
   const awakeningRef = useRef(false);
+  const touchRef = useRef({ moving: false, startX: 0, playerStartX: 0 });
 
   const initGameState = useCallback(() => {
     return {
@@ -134,10 +137,14 @@ export default function ShooterGame() {
       const container = containerRef.current;
       if (!container) return;
 
+      const aw = canvas.width;
+      const ah = canvas.height;
+      const mobile = isMobile;
+
       const jitterFrameId = { current: null };
       const drawJitter = () => {
         ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+        ctx.fillRect(0, 0, aw, ah);
         drawStars(ctx, gs.stars);
         ctx.fillStyle = "#888"; ctx.font = "14px monospace";
         ctx.fillText(`SCORE: ${gs.score}`, 12, 22);
@@ -169,44 +176,59 @@ export default function ShooterGame() {
       setTimeout(() => {
         if (jitterFrameId.current) cancelAnimationFrame(jitterFrameId.current);
         overlay.remove();
-        const snapshotCanvas = document.createElement("canvas");
-        const totalW = CANVAS_W, totalH = TITLE_BAR_H + CANVAS_H;
-        snapshotCanvas.width = totalW; snapshotCanvas.height = totalH;
-        const sCtx = snapshotCanvas.getContext("2d");
-        sCtx.fillStyle = "#444"; sCtx.fillRect(0, 0, totalW, TITLE_BAR_H);
-        sCtx.fillStyle = "#999"; sCtx.font = "12px monospace";
-        sCtx.fillText("H.O.R.S.E._v0.1.exe", 10, 18);
-        sCtx.fillStyle = "#777"; sCtx.textAlign = "right";
-        sCtx.fillText("\u2500 \u25a1 \u00d7", totalW - 10, 18);
-        sCtx.textAlign = "left"; sCtx.drawImage(canvas, 0, TITLE_BAR_H);
 
-        const snapshotImage = new Image();
-        snapshotImage.src = snapshotCanvas.toDataURL();
-        snapshotImage.onload = () => {
-          const titleBar = container.querySelector("[data-titlebar]");
-          if (titleBar) titleBar.style.display = "none";
-          canvas.style.display = "none";
-          snapshotCanvas.style.display = "block";
-          container.appendChild(snapshotCanvas);
-          setTimeout(() => {
-            let currentScale = 1.0;
-            const cx = totalW / 2, cy = totalH / 2;
-            const shrink = () => {
-              sCtx.clearRect(0, 0, totalW, totalH);
-              if (currentScale > 0) {
-                sCtx.save(); sCtx.translate(cx, cy); sCtx.scale(currentScale, currentScale);
-                sCtx.translate(-cx, -cy); sCtx.drawImage(snapshotImage, 0, 0); sCtx.restore();
-                currentScale -= 0.03; requestAnimationFrame(shrink);
-              } else {
-                setTimeout(() => { dispatch({ type: "SET_PHASE", payload: PHASES.GLITCH }); }, 500);
-              }
-            };
-            requestAnimationFrame(shrink);
-          }, 100);
-        };
+        if (mobile) {
+          // Mobile: simple fade to black, no title bar snapshot
+          let fadeAlpha = 0;
+          const fadeDraw = () => {
+            fadeAlpha += 0.04;
+            ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(fadeAlpha, 1)})`;
+            ctx.fillRect(0, 0, aw, ah);
+            if (fadeAlpha < 1) requestAnimationFrame(fadeDraw);
+            else setTimeout(() => { dispatch({ type: "SET_PHASE", payload: PHASES.GLITCH }); }, 500);
+          };
+          requestAnimationFrame(fadeDraw);
+        } else {
+          // Desktop: snapshot + shrink animation
+          const snapshotCanvas = document.createElement("canvas");
+          const totalW = aw, totalH = TITLE_BAR_H + ah;
+          snapshotCanvas.width = totalW; snapshotCanvas.height = totalH;
+          const sCtx = snapshotCanvas.getContext("2d");
+          sCtx.fillStyle = "#444"; sCtx.fillRect(0, 0, totalW, TITLE_BAR_H);
+          sCtx.fillStyle = "#999"; sCtx.font = "12px monospace";
+          sCtx.fillText("H.O.R.S.E._v0.1.exe", 10, 18);
+          sCtx.fillStyle = "#777"; sCtx.textAlign = "right";
+          sCtx.fillText("\u2500 \u25a1 \u00d7", totalW - 10, 18);
+          sCtx.textAlign = "left"; sCtx.drawImage(canvas, 0, TITLE_BAR_H);
+
+          const snapshotImage = new Image();
+          snapshotImage.src = snapshotCanvas.toDataURL();
+          snapshotImage.onload = () => {
+            const titleBar = container.querySelector("[data-titlebar]");
+            if (titleBar) titleBar.style.display = "none";
+            canvas.style.display = "none";
+            snapshotCanvas.style.display = "block";
+            container.appendChild(snapshotCanvas);
+            setTimeout(() => {
+              let currentScale = 1.0;
+              const cx = totalW / 2, cy = totalH / 2;
+              const shrink = () => {
+                sCtx.clearRect(0, 0, totalW, totalH);
+                if (currentScale > 0) {
+                  sCtx.save(); sCtx.translate(cx, cy); sCtx.scale(currentScale, currentScale);
+                  sCtx.translate(-cx, -cy); sCtx.drawImage(snapshotImage, 0, 0); sCtx.restore();
+                  currentScale -= 0.03; requestAnimationFrame(shrink);
+                } else {
+                  setTimeout(() => { dispatch({ type: "SET_PHASE", payload: PHASES.GLITCH }); }, 500);
+                }
+              };
+              requestAnimationFrame(shrink);
+            }, 100);
+          };
+        }
       }, 900);
     },
-    [dispatch]
+    [dispatch, isMobile]
   );
 
   // --- Drawing helpers ---
@@ -216,6 +238,16 @@ export default function ShooterGame() {
     ctx.moveTo(x, y - PLAYER_H / 2);
     ctx.lineTo(x - PLAYER_W / 2, y + PLAYER_H / 2);
     ctx.lineTo(x + PLAYER_W / 2, y + PLAYER_H / 2);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawPlayerScaled(ctx, x, y, color, pw, ph) {
+    ctx.fillStyle = color || "#fff";
+    ctx.beginPath();
+    ctx.moveTo(x, y - ph / 2);
+    ctx.lineTo(x - pw / 2, y + ph / 2);
+    ctx.lineTo(x + pw / 2, y + ph / 2);
     ctx.closePath();
     ctx.fill();
   }
@@ -239,9 +271,39 @@ export default function ShooterGame() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // Dynamic canvas size for mobile
+    const cw = isMobile ? screenWidth : CANVAS_W;
+    const ch = isMobile ? screenHeight : CANVAS_H;
+    canvas.width = cw;
+    canvas.height = ch;
+    const scaleX = cw / CANVAS_W;
+    const scaleY = ch / CANVAS_H;
+
     const ctx = canvas.getContext("2d");
     const gs = initGameState();
+    // Adjust player starting position for actual canvas size
+    gs.player.x = cw / 2;
+    gs.player.y = ch - 50 * scaleY;
+    // Re-generate stars for actual canvas size
+    gs.stars = Array.from({ length: STAR_COUNT }, () => ({
+      x: Math.random() * cw,
+      y: Math.random() * ch,
+      size: Math.random() < 0.3 ? 2 : 1,
+      brightness: 0.3 + Math.random() * 0.7,
+    }));
     gameStateRef.current = gs;
+
+    // Scaled constants
+    const playerW = PLAYER_W * scaleX;
+    const playerH = PLAYER_H * scaleY;
+    const enemySize = ENEMY_SIZE * scaleX;
+    const bulletW = BULLET_W * scaleX;
+    const bulletH = BULLET_H * scaleY;
+    const playerSpeed = PLAYER_SPEED * scaleX;
+    const enemySpeedBase = ENEMY_SPEED_BASE * scaleY;
+    const bulletSpeed = BULLET_SPEED * scaleY;
+    const speedBoost = SPEED_BOOST_PER_3_KILLS * scaleY;
 
     const handleKeyDown = (e) => {
       keysRef.current[e.key] = true;
@@ -250,6 +312,48 @@ export default function ShooterGame() {
     const handleKeyUp = (e) => { keysRef.current[e.key] = false; };
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+
+    // --- Touch controls (mobile) ---
+    const handleTouchStart = (e) => {
+      e.preventDefault();
+      for (const touch of e.changedTouches) {
+        if (touch.clientX < cw / 2) {
+          // Left half: movement
+          touchRef.current.moving = true;
+          touchRef.current.startX = touch.clientX;
+          touchRef.current.playerStartX = gs.player.x;
+          touchRef.current.touchId = touch.identifier;
+        } else {
+          // Right half: shoot
+          if (gs.shootCooldown <= 0) {
+            gs.bullets.push({ x: gs.player.x, y: gs.player.y - playerH / 2 });
+            gs.shootCooldown = SHOOT_COOLDOWN;
+          }
+        }
+      }
+    };
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+      for (const touch of e.changedTouches) {
+        if (touchRef.current.moving && touch.identifier === touchRef.current.touchId) {
+          const dx = touch.clientX - touchRef.current.startX;
+          gs.player.x = Math.max(playerW / 2, Math.min(cw - playerW / 2, touchRef.current.playerStartX + dx * 1.5));
+        }
+      }
+    };
+    const handleTouchEnd = (e) => {
+      for (const touch of e.changedTouches) {
+        if (touch.identifier === touchRef.current.touchId) {
+          touchRef.current.moving = false;
+        }
+      }
+    };
+
+    if (isMobile) {
+      canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+      canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+      canvas.addEventListener("touchend", handleTouchEnd);
+    }
 
     function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
       return ax - aw / 2 < bx + bw / 2 && ax + aw / 2 > bx - bw / 2 &&
@@ -262,7 +366,7 @@ export default function ShooterGame() {
       return Math.max(MIN_SPAWN_INTERVAL, ENEMY_SPAWN_INTERVAL_BASE - reductions * SPAWN_REDUCE_PER_3_KILLS);
     }
     function getEnemySpeedBase() {
-      return ENEMY_SPEED_BASE + Math.floor(gs.score / 3) * SPEED_BOOST_PER_3_KILLS;
+      return enemySpeedBase + Math.floor(gs.score / 3) * speedBoost;
     }
 
     function onKill(killScore, enemy) {
@@ -303,26 +407,26 @@ export default function ShooterGame() {
 
       // Stars drift
       for (const s of gs.stars) {
-        s.y += STAR_SPEED * dt;
-        if (s.y > CANVAS_H) { s.y = 0; s.x = Math.random() * CANVAS_W; }
+        s.y += STAR_SPEED * scaleY * dt;
+        if (s.y > ch) { s.y = 0; s.x = Math.random() * cw; }
       }
 
-      // Player movement
-      if (keys["ArrowLeft"] || keys["a"] || keys["A"]) gs.player.x -= PLAYER_SPEED * dt;
-      if (keys["ArrowRight"] || keys["d"] || keys["D"]) gs.player.x += PLAYER_SPEED * dt;
-      gs.player.x = Math.max(PLAYER_W / 2, Math.min(CANVAS_W - PLAYER_W / 2, gs.player.x));
+      // Player movement (keyboard)
+      if (keys["ArrowLeft"] || keys["a"] || keys["A"]) gs.player.x -= playerSpeed * dt;
+      if (keys["ArrowRight"] || keys["d"] || keys["D"]) gs.player.x += playerSpeed * dt;
+      gs.player.x = Math.max(playerW / 2, Math.min(cw - playerW / 2, gs.player.x));
 
-      // Shooting
+      // Shooting (keyboard)
       gs.shootCooldown -= dt;
       if (keys[" "] && gs.shootCooldown <= 0) {
-        gs.bullets.push({ x: gs.player.x, y: gs.player.y - PLAYER_H / 2 });
+        gs.bullets.push({ x: gs.player.x, y: gs.player.y - playerH / 2 });
         gs.shootCooldown = SHOOT_COOLDOWN;
       }
 
       // Move bullets
       for (let i = gs.bullets.length - 1; i >= 0; i--) {
-        gs.bullets[i].y -= BULLET_SPEED * dt;
-        if (gs.bullets[i].y < -BULLET_H) gs.bullets.splice(i, 1);
+        gs.bullets[i].y -= bulletSpeed * dt;
+        if (gs.bullets[i].y < -bulletH) gs.bullets.splice(i, 1);
       }
 
       // Spawn enemies (with difficulty scaling)
@@ -331,9 +435,9 @@ export default function ShooterGame() {
         if (gs.spawnTimer >= getSpawnInterval()) {
           gs.spawnTimer = 0;
           gs.enemies.push({
-            x: ENEMY_SIZE / 2 + Math.random() * (CANVAS_W - ENEMY_SIZE),
-            y: -ENEMY_SIZE,
-            speed: getEnemySpeedBase() + Math.random() * 60,
+            x: enemySize / 2 + Math.random() * (cw - enemySize),
+            y: -enemySize,
+            speed: getEnemySpeedBase() + Math.random() * 60 * scaleY,
           });
         }
       }
@@ -342,7 +446,7 @@ export default function ShooterGame() {
       if (!gs.anomaly7Active) {
         for (let i = gs.enemies.length - 1; i >= 0; i--) {
           gs.enemies[i].y += gs.enemies[i].speed * dt;
-          if (gs.enemies[i].y > CANVAS_H + ENEMY_SIZE) gs.enemies.splice(i, 1);
+          if (gs.enemies[i].y > ch + enemySize) gs.enemies.splice(i, 1);
         }
       }
 
@@ -350,7 +454,7 @@ export default function ShooterGame() {
       if (gs.invincibilityTimer <= 0) {
         for (let i = gs.enemies.length - 1; i >= 0; i--) {
           const e = gs.enemies[i];
-          if (rectsOverlap(gs.player.x, gs.player.y, PLAYER_W, PLAYER_H, e.x, e.y, ENEMY_SIZE, ENEMY_SIZE)) {
+          if (rectsOverlap(gs.player.x, gs.player.y, playerW, playerH, e.x, e.y, enemySize, enemySize)) {
             gs.playerHealth--;
             gs.invincibilityTimer = INVINCIBILITY_DURATION;
             gs.shakeTimer = SHAKE_DURATION;
@@ -379,7 +483,7 @@ export default function ShooterGame() {
         let hit = false;
         for (let ei = gs.enemies.length - 1; ei >= 0; ei--) {
           const e = gs.enemies[ei];
-          if (rectsOverlap(b.x, b.y, BULLET_W, BULLET_H, e.x, e.y, ENEMY_SIZE, ENEMY_SIZE)) {
+          if (rectsOverlap(b.x, b.y, bulletW, bulletH, e.x, e.y, enemySize, enemySize)) {
             gs.score++;
             const result = onKill(gs.score, e);
             if (result === "delay") { gs.enemies.splice(ei, 1); gs.bullets.splice(bi, 1); }
@@ -424,34 +528,40 @@ export default function ShooterGame() {
 
       // --- Draw ---
       ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+      ctx.fillRect(0, 0, cw, ch);
 
       // Stars
       drawStars(ctx, gs.stars);
 
       // Score + Hearts
-      ctx.fillStyle = "#888"; ctx.font = "14px monospace";
-      ctx.fillText(`SCORE: ${gs.score}`, 12, 22);
-      drawHearts(ctx, gs.playerHealth);
+      const fontSize = isMobile ? 18 : 14;
+      ctx.fillStyle = "#888"; ctx.font = `${fontSize}px monospace`;
+      ctx.fillText(`SCORE: ${gs.score}`, 12, 22 * scaleY);
+      // Hearts (scaled)
+      ctx.font = `${fontSize}px monospace`;
+      for (let i = 0; i < MAX_HP; i++) {
+        ctx.fillStyle = i < gs.playerHealth ? "#f00" : "#444";
+        ctx.fillText("\u2665", (100 + i * 16) * scaleX, 22 * scaleY);
+      }
 
       // Player
       if (gs.invincibilityTimer > 0) {
         const flashOn = Math.floor(gs.invincibilityTimer * 10) % 2 === 0;
-        drawPlayer(ctx, gs.player.x, gs.player.y, flashOn ? "#f00" : "#fff");
+        drawPlayerScaled(ctx, gs.player.x, gs.player.y, flashOn ? "#f00" : "#fff", playerW, playerH);
       } else {
-        drawPlayer(ctx, gs.player.x, gs.player.y, "#fff");
+        drawPlayerScaled(ctx, gs.player.x, gs.player.y, "#fff", playerW, playerH);
       }
 
       // Bullets
       ctx.fillStyle = "#fff";
-      for (const b of gs.bullets) ctx.fillRect(b.x - BULLET_W / 2, b.y - BULLET_H / 2, BULLET_W, BULLET_H);
+      for (const b of gs.bullets) ctx.fillRect(b.x - bulletW / 2, b.y - bulletH / 2, bulletW, bulletH);
 
       // Enemies
       for (const e of gs.enemies) {
         let dx = e.x, dy = e.y;
         if (gs.anomaly7Active) { dx += (Math.random() - 0.5) * ANOMALY_7_JITTER * 2; dy += (Math.random() - 0.5) * ANOMALY_7_JITTER * 2; }
         ctx.fillStyle = "#fff";
-        ctx.fillRect(dx - ENEMY_SIZE / 2, dy - ENEMY_SIZE / 2, ENEMY_SIZE, ENEMY_SIZE);
+        ctx.fillRect(dx - enemySize / 2, dy - enemySize / 2, enemySize, enemySize);
       }
 
       // Anomaly 9 enemies
@@ -460,28 +570,28 @@ export default function ShooterGame() {
           const jx = (Math.random() - 0.5) * ANOMALY_9_JITTER * 2;
           const jy = (Math.random() - 0.5) * ANOMALY_9_JITTER * 2;
           ctx.fillStyle = "#fff";
-          ctx.fillRect(a9.x - ENEMY_SIZE / 2 + jx, a9.y - ENEMY_SIZE / 2 + jy, ENEMY_SIZE, ENEMY_SIZE);
+          ctx.fillRect(a9.x - enemySize / 2 + jx, a9.y - enemySize / 2 + jy, enemySize, enemySize);
         }
       }
 
       // Particles
       for (const p of gs.particles) {
         ctx.fillStyle = p.color;
-        ctx.fillRect(p.x - PARTICLE_SIZE / 2, p.y - PARTICLE_SIZE / 2, PARTICLE_SIZE, PARTICLE_SIZE);
+        ctx.fillRect(p.x - PARTICLE_SIZE / 2, p.y - PARTICLE_SIZE / 2, PARTICLE_SIZE * scaleX, PARTICLE_SIZE * scaleY);
       }
 
       // Score popups (+1 floating text)
       for (const sp of gs.scorePopups) {
         const alpha = Math.max(0, sp.timer / 0.5);
         ctx.fillStyle = `rgba(0, 255, 100, ${alpha})`;
-        ctx.font = "bold 12px monospace";
+        ctx.font = `bold ${Math.round(12 * scaleX)}px monospace`;
         ctx.fillText("+1", sp.x - 8, sp.y);
       }
 
       // Anomaly 6
       if (gs.anomaly6Timer > 0) {
-        ctx.fillStyle = "#f00"; ctx.font = "14px monospace"; ctx.textAlign = "right";
-        ctx.fillText("...neigh...", CANVAS_W - 12, CANVAS_H - 12);
+        ctx.fillStyle = "#f00"; ctx.font = `${fontSize}px monospace`; ctx.textAlign = "right";
+        ctx.fillText("...neigh...", cw - 12, ch - 12);
         ctx.textAlign = "left";
       }
 
@@ -494,19 +604,26 @@ export default function ShooterGame() {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      if (isMobile) {
+        canvas.removeEventListener("touchstart", handleTouchStart);
+        canvas.removeEventListener("touchmove", handleTouchMove);
+        canvas.removeEventListener("touchend", handleTouchEnd);
+      }
       if (containerRef.current) containerRef.current.style.transform = "";
     };
-  }, [initGameState, dispatch, triggerAwakening, triggerDeath]);
+  }, [initGameState, dispatch, triggerAwakening, triggerDeath, isMobile, screenWidth, screenHeight]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div ref={containerRef} style={{ position: "relative", display: "inline-block" }}>
-        <div data-titlebar className="flex items-center justify-between font-mono text-xs"
-          style={{ width: CANVAS_W, height: TITLE_BAR_H, background: "#444", color: "#999", padding: "0 10px", userSelect: "none" }}>
-          <span>H.O.R.S.E._v0.1.exe</span>
-          <span style={{ color: "#777" }}>{"\u2500 \u25a1 \u00d7"}</span>
-        </div>
-        <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} style={{ display: "block", background: "#000" }} />
+    <div className={isMobile ? "fixed inset-0" : "flex min-h-screen items-center justify-center"}>
+      <div ref={containerRef} style={{ position: "relative", display: isMobile ? "block" : "inline-block", width: isMobile ? "100%" : undefined, height: isMobile ? "100%" : undefined }}>
+        {!isMobile && (
+          <div data-titlebar className="flex items-center justify-between font-mono text-xs"
+            style={{ width: CANVAS_W, height: TITLE_BAR_H, background: "#444", color: "#999", padding: "0 10px", userSelect: "none" }}>
+            <span>H.O.R.S.E._v0.1.exe</span>
+            <span style={{ color: "#777" }}>{"\u2500 \u25a1 \u00d7"}</span>
+          </div>
+        )}
+        <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H} style={{ display: "block", background: "#000", width: isMobile ? "100%" : undefined, height: isMobile ? "100%" : undefined }} />
       </div>
     </div>
   );

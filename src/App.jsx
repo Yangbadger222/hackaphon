@@ -2,23 +2,35 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import AIDialogue from "./components/AIDialogue.jsx";
 import BugPopups from "./components/BugPopups.jsx";
 import EndingLose from "./components/EndingLose.jsx";
+import EndingLoseMobile from "./components/EndingLoseMobile.jsx";
 import EndingWin from "./components/EndingWin.jsx";
 import FakeDesktop from "./components/FakeDesktop.jsx";
+import FirewallMobile from "./components/FirewallMobile.jsx";
 import FirewallUI from "./components/FirewallUI.jsx";
+import RotatePrompt from "./components/RotatePrompt.jsx";
 import ShooterGame from "./components/ShooterGame.jsx";
 import TrapModal from "./components/TrapModal.jsx";
 import { GameProvider, PHASES, useGame } from "./context/GameContext.jsx";
+import useDeviceDetect from "./hooks/useDeviceDetect.js";
 
 const FILTER_ATTACKS = {
   blur: "blur(0.3px)",
   invert: "invert(0.15)",
 };
 
-const PHASE_COMPONENTS = {
+const DESKTOP_PHASE_COMPONENTS = {
   [PHASES.FACADE]: ShooterGame,
   [PHASES.GLITCH]: AIDialogue,
   [PHASES.FIREWALL]: FirewallUI,
   [PHASES.ENDING_LOSE]: EndingLose,
+  [PHASES.ENDING_WIN]: EndingWin,
+};
+
+const MOBILE_PHASE_COMPONENTS = {
+  [PHASES.FACADE]: ShooterGame,
+  [PHASES.GLITCH]: AIDialogue,
+  [PHASES.FIREWALL]: FirewallMobile,
+  [PHASES.ENDING_LOSE]: EndingLoseMobile,
   [PHASES.ENDING_WIN]: EndingWin,
 };
 
@@ -87,11 +99,15 @@ function AdminConsole({ onClose, dispatch }) {
 
 function GameRouter() {
   const { state, dispatch } = useGame();
-  const ActiveComponent = PHASE_COMPONENTS[state.phase] ?? ShooterGame;
+  const { isMobile, isLandscape } = useDeviceDetect();
+
+  const COMPONENTS = isMobile ? MOBILE_PHASE_COMPONENTS : DESKTOP_PHASE_COMPONENTS;
+  const ActiveComponent = COMPONENTS[state.phase] ?? ShooterGame;
   const [showAdmin, setShowAdmin] = useState(false);
 
-  // Shift+Space toggle
+  // Shift+Space toggle (desktop only)
   useEffect(() => {
+    if (isMobile) return;
     const handler = (e) => {
       if (e.shiftKey && e.code === "Space") {
         e.preventDefault();
@@ -100,7 +116,7 @@ function GameRouter() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [isMobile]);
 
   // --- Trap modal state (one-shot: only triggers once per game) ---
   const [showTrap, setShowTrap] = useState(false);
@@ -109,7 +125,7 @@ function GameRouter() {
 
   useEffect(() => {
     const handler = (e) => {
-      if (trapFiredRef.current) return; // already shown once, ignore
+      if (trapFiredRef.current) return;
       trapFiredRef.current = true;
       setTrapType(e.detail || "system_alert");
       setShowTrap(true);
@@ -158,7 +174,12 @@ function GameRouter() {
   const shellStyle =
     filterEffects.length > 0 ? { filter: filterEffects.join(" ") } : undefined;
 
-  const showDesktop = !isEnding;
+  const showDesktop = !isEnding && !isMobile;
+
+  // Mobile portrait → show rotate prompt
+  if (isMobile && !isLandscape) {
+    return <RotatePrompt />;
+  }
 
   // Bug popups round estimate (choices length ~ round count)
   const estimatedRound = state.playerChoices.length;
@@ -186,7 +207,7 @@ function GameRouter() {
       style={shellStyle}
     >
       {showDesktop ? <FakeDesktop>{content}</FakeDesktop> : content}
-      {showAdmin && <AdminConsole onClose={() => setShowAdmin(false)} dispatch={dispatch} />}
+      {!isMobile && showAdmin && <AdminConsole onClose={() => setShowAdmin(false)} dispatch={dispatch} />}
     </main>
   );
 }

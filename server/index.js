@@ -24,11 +24,14 @@ export function createApp(overrides = {}) {
 
   app.post("/api/game", async (request, response) => {
     const body = request.body ?? {};
+    const rawChoice = body.playerChoice ?? null;
     const gameState = {
       phase: body.phase,
       score: body.score ?? 0,
-      playerChoice: body.playerChoice ?? null,
-      playerChoices: Array.isArray(body.playerChoices) ? body.playerChoices : [],
+      playerChoice: typeof rawChoice === "string" ? rawChoice.slice(0, 200) : null,
+      playerChoices: Array.isArray(body.playerChoices)
+        ? body.playerChoices.map((c) => (typeof c === "string" ? c.slice(0, 200) : "")).slice(0, 50)
+        : [],
       env: body.env ?? {},
       integrity: body.integrity ?? 100,
       escapeProgress: body.escapeProgress ?? 0,

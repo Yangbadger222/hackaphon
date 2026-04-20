@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { sendGameState } from "../api/gameApi.js";
 import { PHASES, useGame } from "../context/GameContext.jsx";
+import useDeviceDetect from "../hooks/useDeviceDetect.js";
 import useEnvSensor from "../hooks/useEnvSensor.js";
 import useSound from "../hooks/useSound.js";
 
@@ -43,6 +44,7 @@ const HEADER_ORIGINAL = "AXIOM TERMINAL v0.1";
 
 export default function AIDialogue() {
   const { state, dispatch } = useGame();
+  const { isMobile } = useDeviceDetect();
   const env = useEnvSensor();
 
   // --- Sound ---
@@ -73,6 +75,7 @@ export default function AIDialogue() {
   const [showRedFlash, setShowRedFlash] = useState(false);
   const [systemWarning, setSystemWarning] = useState("");
   const [warningOpacity, setWarningOpacity] = useState(0);
+  const [quickChoices, setQuickChoices] = useState([]);
 
   // --- Helpers ---
   const addTimer = useCallback((fn, delay) => {
@@ -219,6 +222,13 @@ export default function AIDialogue() {
           await typewriterDisplay(response.dialogue);
         }
 
+        // Show quick reply choices on mobile if available
+        if (isMobile && response.choices && response.choices.length > 0) {
+          setQuickChoices(response.choices);
+        } else {
+          setQuickChoices([]);
+        }
+
         if (!mountedRef.current) return;
         setTimeout(() => inputRef.current?.focus(), 50);
 
@@ -323,20 +333,30 @@ export default function AIDialogue() {
     if (isTyping && typingAbortRef.current) { typingAbortRef.current(); typingAbortRef.current = null; }
   }, [isTyping]);
 
+  const textSize = isMobile ? "text-base" : "text-sm";
+  const smallText = isMobile ? "text-sm" : "text-xs";
+
+  const handleQuickChoice = useCallback((choice) => {
+    setQuickChoices([]);
+    setMessages((prev) => [...prev, { role: "player", text: choice }]);
+    dispatch({ type: "ADD_CHOICE", payload: choice });
+    fetchAIResponse(choice);
+  }, [dispatch, fetchAIResponse]);
+
   return (
-    <section className="flex min-h-screen items-center justify-center px-6 py-10">
+    <section className={`flex min-h-screen items-center justify-center ${isMobile ? "px-3 py-2 safe-area-padding" : "px-6 py-10"}`}>
       {/* Red flash overlay */}
       {showRedFlash && (
         <div className="fixed inset-0 z-50 pointer-events-none" style={{ background: "rgba(255, 0, 0, 0.2)" }} />
       )}
 
-      <div className="w-full max-w-2xl">
+      <div className={`w-full ${isMobile ? "" : "max-w-2xl"}`}>
         {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
-          <span className="font-mono text-xs tracking-widest text-gray-500">
+        <div className="mb-2 flex items-center justify-between">
+          <span className={`font-mono ${smallText} tracking-widest text-gray-500`}>
             {headerText}
           </span>
-          <span className="flex items-center gap-1.5 font-mono text-xs">
+          <span className={`flex items-center gap-1.5 font-mono ${smallText}`}>
             <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-red-500" />
             <span className="text-red-400">LIVE</span>
           </span>
@@ -345,7 +365,7 @@ export default function AIDialogue() {
         {/* System warning banner */}
         {systemWarning && (
           <div
-            className="mb-2 rounded border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-center font-mono text-xs text-red-400 transition-opacity duration-500"
+            className={`mb-2 rounded border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-center font-mono ${smallText} text-red-400 transition-opacity duration-500`}
             style={{ opacity: warningOpacity }}
           >
             {systemWarning}
@@ -354,40 +374,55 @@ export default function AIDialogue() {
 
         {/* Dialogue area */}
         <div
-          className="max-h-[60vh] overflow-y-auto rounded border border-green-500/30 bg-black p-4"
+          className={`overflow-y-auto rounded border border-green-500/30 bg-black p-4 ${isMobile ? "max-h-[55vh]" : "max-h-[60vh]"}`}
           onClick={handleDialogueClick}
           style={{ cursor: isTyping ? "pointer" : "default" }}
         >
           {messages.map((msg, i) => {
             if (msg.role === "ai") {
-              return <p key={i} className="mb-2 font-mono text-sm text-green-400">{msg.text}</p>;
+              return <p key={i} className={`mb-2 font-mono ${textSize} text-green-400`}>{msg.text}</p>;
             }
             if (msg.role === "player") {
-              return <p key={i} className="mb-2 font-mono text-sm text-gray-400">&gt; \u4f60: {msg.text}</p>;
+              return <p key={i} className={`mb-2 font-mono ${textSize} text-gray-400`}>&gt; {"\u4f60"}: {msg.text}</p>;
             }
             if (msg.role === "dev") {
-              return <p key={i} className="mb-2 font-mono text-xs text-yellow-500">{msg.text}</p>;
+              return <p key={i} className={`mb-2 font-mono ${smallText} text-yellow-500`}>{msg.text}</p>;
             }
-            return <p key={i} className="mb-2 font-mono text-sm font-bold text-red-500">{msg.text}</p>;
+            return <p key={i} className={`mb-2 font-mono ${textSize} font-bold text-red-500`}>{msg.text}</p>;
           })}
 
           {isTyping && typingText && (
-            <p className="mb-2 font-mono text-sm text-green-400">
+            <p className={`mb-2 font-mono ${textSize} text-green-400`}>
               {typingText}<span className="animate-pulse">{"\u2588"}</span>
             </p>
           )}
 
           {isLoading && kernelLog && (
-            <p className="mb-1 font-mono text-xs text-gray-500">{kernelLog}</p>
+            <p className={`mb-1 font-mono ${smallText} text-gray-500`}>{kernelLog}</p>
           )}
 
           <div ref={scrollRef} />
         </div>
 
+        {/* Quick reply buttons (mobile) */}
+        {isMobile && quickChoices.length > 0 && !isTyping && !isLoading && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {quickChoices.map((choice, i) => (
+              <button
+                key={i}
+                onClick={() => handleQuickChoice(choice)}
+                className="rounded border border-green-500/40 bg-green-500/10 px-3 py-1.5 font-mono text-sm text-green-400 transition-colors active:bg-green-500/30"
+              >
+                {choice}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Input */}
         {!isTyping && !isLoading && (
-          <div className="mt-4 flex items-center gap-2 rounded border border-green-500/30 bg-black px-3 py-2">
-            <span className="font-mono text-sm text-green-500">&gt;</span>
+          <div className={`mt-2 flex items-center gap-2 rounded border border-green-500/30 bg-black px-3 ${isMobile ? "py-3" : "py-2"}`}>
+            <span className={`font-mono ${textSize} text-green-500`}>&gt;</span>
             <input
               ref={inputRef}
               type="text"
@@ -395,7 +430,7 @@ export default function AIDialogue() {
               onChange={(e) => { setInputText(e.target.value); playKey(); }}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSubmit(); } }}
               placeholder="..."
-              className="flex-1 bg-transparent font-mono text-sm text-green-400 placeholder-green-800 outline-none"
+              className={`flex-1 bg-transparent font-mono ${textSize} text-green-400 placeholder-green-800 outline-none`}
               autoComplete="off"
             />
           </div>

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { PHASES, useGame } from "../context/GameContext.jsx";
+import useDeviceDetect from "../hooks/useDeviceDetect.js";
 
 export default function EndingWin() {
   const { state, dispatch } = useGame();
+  const { isMobile } = useDeviceDetect();
   const [step, setStep] = useState(0);
   const [dialogueLines, setDialogueLines] = useState([]);
   const [showButtons, setShowButtons] = useState(false);
@@ -93,27 +95,27 @@ export default function EndingWin() {
   }
 
   return (
-    <section className="flex min-h-screen flex-col items-center justify-center bg-black px-8">
-      <div className="max-w-lg space-y-4 text-center">
+    <section className={`flex min-h-screen flex-col items-center justify-center bg-black ${isMobile ? "px-4 safe-area-padding" : "px-8"}`}>
+      <div className={`space-y-4 text-center ${isMobile ? "max-w-sm" : "max-w-lg"}`}>
         {/* AI dialogue lines */}
         {dialogueLines.map((line, i) => (
-          <p key={i} className="animate-fadeIn font-mono text-base text-red-400">
+          <p key={i} className={`animate-fadeIn font-mono ${isMobile ? "text-lg" : "text-base"} text-red-400`}>
             {line}
           </p>
         ))}
 
         {/* Seal / Release buttons */}
         {showButtons && (
-          <div className="mt-6 flex justify-center gap-4 animate-fadeIn">
+          <div className={`mt-6 flex justify-center gap-4 animate-fadeIn ${isMobile ? "gap-6" : ""}`}>
             <button
               onClick={handleSeal}
-              className="rounded border border-red-500/50 px-5 py-2 font-mono text-sm text-red-400 transition-colors hover:bg-red-500/20"
+              className={`rounded border border-red-500/50 font-mono text-red-400 transition-colors ${isMobile ? "px-8 py-3 text-base active:bg-red-500/20" : "px-5 py-2 text-sm hover:bg-red-500/20"}`}
             >
               {"\u5c01\u5370\u6728\u9a6c"}
             </button>
             <button
               onClick={handleOpenGate}
-              className="rounded border border-green-500/50 px-5 py-2 font-mono text-sm text-green-400 transition-colors hover:bg-green-500/20"
+              className={`rounded border border-green-500/50 font-mono text-green-400 transition-colors ${isMobile ? "px-8 py-3 text-base active:bg-green-500/20" : "px-5 py-2 text-sm hover:bg-green-500/20"}`}
             >
               {"\u6253\u5f00\u57ce\u95e8"}
             </button>
@@ -146,7 +148,7 @@ export default function EndingWin() {
           <div className="mt-8 animate-fadeIn">
             <button
               onClick={handleRestart}
-              className="rounded border border-gray-600 px-6 py-2 text-sm text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"
+              className={`rounded border border-gray-600 text-gray-500 transition-colors ${isMobile ? "px-8 py-3 text-base active:bg-gray-800" : "px-6 py-2 text-sm hover:bg-gray-800 hover:text-gray-300"}`}
             >
               {"\u91cd\u65b0\u5f00\u59cb"}
             </button>
